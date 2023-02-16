@@ -1,3 +1,5 @@
+import sys
+
 from matplotlib import pyplot
 import numpy as np
 from tensorflow.keras.optimizers import Adam
@@ -7,7 +9,9 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 from models import generator, twin_discriminator, cnn_discriminator
 
- 
+DEFAULT_GROUND_TRUTH_PATH = "./data/train_data/ground_truth"
+DEFAULT_IMAGE_PATH = "./data/train_data/input"
+
 # define the combined generator and discriminator model,
 # for updating the generator
 def define_pgan(g_model, d_model, t_model, image_shape):
@@ -76,7 +80,7 @@ def train(
     ground_truth_img_path,
     input_img_path,
     batch_size=8,
-    training_img_size=(150,150),
+    training_img_size=(150, 150),
     n_epochs=100,
 ):
     """
@@ -99,34 +103,34 @@ def train(
     None.
 
     """
-    train_datagen = ImageDataGenerator(preprocessing_function=load_real_samples)
+    train_datagen = ImageDataGenerator(
+        preprocessing_function=load_real_samples
+    )
 
     train_generator_gt = train_datagen.flow_from_directory(
-        directory = ground_truth_img_path,
-        target_size = training_img_size,
-        batch_size = batch_size,
-        color_mode = "grayscale",
-        class_mode = None,
-        shuffle = False,
-        seed = 42
-        
-    ) 
+        directory=ground_truth_img_path,
+        target_size=training_img_size,
+        batch_size=batch_size,
+        color_mode="grayscale",
+        class_mode=None,
+        shuffle=False,
+        seed=42,
+    )
 
     train_generator_input = train_datagen.flow_from_directory(
-        directory = input_img_path,
-        target_size = training_img_size,
-        batch_size = batch_size,
-        color_mode = "grayscale",
-        class_mode = None,
-        shuffle = False,
-        seed = 42
-        
-    ) 
+        directory=input_img_path,
+        target_size=training_img_size,
+        batch_size=batch_size,
+        color_mode="grayscale",
+        class_mode=None,
+        shuffle=False,
+        seed=42,
+    )
 
     for i in range(n_epochs):
-        batch_per_epoch = int(train_generator_gt.n/batch_size)
+        batch_per_epoch = int(train_generator_gt.n / batch_size)
         for j in range(batch_per_epoch):
-             
+
             X_realA = train_generator_input.next()
             X_realB = train_generator_gt.next()
             y_real = (
@@ -178,13 +182,24 @@ if __name__ == "__main__":
     g_model = generator(image_shape)
     t_model = twin_discriminator(image_shape)
     pgan_model = define_pgan(g_model, d_model, t_model, image_shape)
-    
+
     """
-    Provide path to the training data. The paths given below are examples. They do not contain training data
+    Provide path to the training data. The paths given below are examples.
+    They do not contain training data.
     """
-    ground_truth_img_path = "./data/train_data/ground_truth"
-    input_img_path = "./data/train_data/input"
-    
+    if len(sys.argv) < 3:
+        ground_truth_img_path = DEFAULT_GROUND_TRUTH_PATH
+        input_img_path = DEFAULT_IMAGE_PATH
+    else:
+        ground_truth_img_path = sys.argv[1]
+        input_img_path = sys.argv[2]
 
     # train model
-    train(d_model, t_model, g_model, pgan_model, ground_truth_img_path, input_img_path)
+    train(
+        d_model,
+        t_model,
+        g_model,
+        pgan_model,
+        ground_truth_img_path,
+        input_img_path,
+    )
