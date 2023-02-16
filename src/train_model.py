@@ -1,10 +1,5 @@
-import os
-
 from matplotlib import pyplot
 import numpy as np
-import pickle
-from sklearn.utils import shuffle
-from skimage import io
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input
