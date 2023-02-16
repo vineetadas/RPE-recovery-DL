@@ -8,14 +8,14 @@ from skimage import io
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 from models import generator, twin_discriminator, cnn_discriminator
 
-BATCH_SIZE = 8
-
+ 
 # define the combined generator and discriminator model,
 # for updating the generator
-def define_gan(g_model, d_model, t_model, image_shape):
+def define_pgan(g_model, d_model, t_model, image_shape):
     t_model.trainable = False
     d_model.trainable = False
 
@@ -77,24 +77,63 @@ def train(
     d_model,
     s_model,
     g_model,
-    gan_model,
-    batch_create,
-    batch_per_epoch,
-    average_img_path,
-    speckled_img_path,
+    pgan_model,
+    ground_truth_img_path,
+    input_img_path,
+    batch_size=8,
+    training_img_size=(150,150),
     n_epochs=100,
 ):
-    bat_per_epo = int(
-        len(train_data_fname) / BATCH_SIZE
-    )  # calculate the number of batches per training epoch
+    """
+    Parameters
+    ----------
+    d_model : The CNN discriminator network
+    s_model : Twin discriminator network
+    g_model : Generator network 
+    pgan_model : P-GAN network
+    ground_truth_img_path : path to the training ground truth images
+    input_img_path : path to the input training inmages to the netwrok
+    batch_size : Integer, The default is 8.
+    training_img_size : 2D tensor with shape (width, height) of the training images.
+    The default is (150,150).
+    n_epochs : Integer, number of epochs to train the network.
+     The default is 100.
+
+    Returns
+    -------
+    None.
+
+    """
+    train_datagen = ImageDataGenerator(preprocessing_function=load_real_samples)
+
+    train_generator_gt = train_datagen.flow_from_directory(
+        directory = ground_truth_img_path,
+        target_size = training_img_size,
+        batch_size = batch_size,
+        color_mode = "grayscale",
+        class_mode = None,
+        shuffle = False,
+        seed = 42
+        
+    ) 
+
+    train_generator_input = train_datagen.flow_from_directory(
+        directory = input_img_path,
+        target_size = training_img_size,
+        batch_size = batch_size,
+        color_mode = "grayscale",
+        class_mode = None,
+        shuffle = False,
+        seed = 42
+        
+    ) 
 
     for i in range(n_epochs):
-        data_fname = shuffle(train_data_fname, random_state=i)
+        batch_per_epoch = int(train_generator_gt.n/batch_size)
         for j in range(batch_per_epoch):
-            rand_idx = batch_create[j]
-            rand_idx = rand_idx.tolist()
-            X_realA = get_batch_data(train_data_path_1, data_fname, rand_idx)
-            X_realB = get_batch_data(train_data_path_120, data_fname, rand_idx)
+             
+            X_realA = train_generator_input.next()
+            X_realB = train_generator_gt.next()
             y_real = (
                 np.ones(len(X_realA))
                 - np.random.random_sample(len(X_realA)) * 0.2
@@ -122,7 +161,7 @@ def train(
                 s_model.trainable = False
 
             # update  generator
-            g_loss, _, _, _ = gan_model.train_on_batch(
+            g_loss, _, _, _ = pgan_model.train_on_batch(
                 [X_realA, X_realB], [y_real, y_real_s, X_realB]
             )
 
@@ -143,8 +182,14 @@ if __name__ == "__main__":
     d_model = cnn_discriminator(image_shape)
     g_model = generator(image_shape)
     t_model = twin_discriminator(image_shape)
-
-    gan_model = define_gan(g_model, d_model, t_model, image_shape)
+    pgan_model = define_pgan(g_model, d_model, t_model, image_shape)
+    
+    """
+    Provide path to the training data. The paths given below are examples. They do not contain training data
+    """
+    ground_truth_img_path = "./data/train_data/ground_truth"
+    input_img_path = "./data/train_data/input"
+    
 
     # train model
-    train(d_model, t_model, g_model, gan_model)
+    train(d_model, t_model, g_model, pgan_model, ground_truth_img_path, input_img_path)
