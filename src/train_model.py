@@ -12,6 +12,7 @@ from models import generator, twin_discriminator, cnn_discriminator
 DEFAULT_GROUND_TRUTH_PATH = "./data/train_data/ground_truth"
 DEFAULT_IMAGE_PATH = "./data/train_data/input"
 
+
 # define the combined generator and discriminator model,
 # for updating the generator
 def define_pgan(g_model, d_model, t_model, image_shape):
@@ -88,12 +89,13 @@ def train(
     ----------
     d_model : The CNN discriminator network
     s_model : Twin discriminator network
-    g_model : Generator network 
+    g_model : Generator network
     pgan_model : P-GAN network
     ground_truth_img_path : path to the training ground truth images
     input_img_path : path to the input training inmages to the netwrok
     batch_size : Integer, The default is 8.
-    training_img_size : 2D tensor with shape (width, height) of the training images.
+    training_img_size : 2D tensor with shape (width, height) of the training
+    images.
     The default is (150,150).
     n_epochs : Integer, number of epochs to train the network.
      The default is 100.
@@ -153,7 +155,7 @@ def train(
                 d_loss2 = d_model.train_on_batch(X_fakeB, y_fake)
                 d_model.trainable = False
 
-                ## update twin discriminator
+                # update twin discriminator
                 s_model.trainable = True
                 s_loss1 = s_model.train_on_batch([X_realB, X_realB], y_real_s)
                 s_loss2 = s_model.train_on_batch([X_realB, X_fakeB], y_fake_s)
