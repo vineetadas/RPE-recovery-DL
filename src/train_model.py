@@ -1,5 +1,6 @@
-import sys
+import os
 
+import argparse
 from matplotlib import pyplot
 import numpy as np
 from tensorflow.keras.optimizers import Adam
@@ -8,9 +9,6 @@ from tensorflow.keras.layers import Input
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 from models import generator, twin_discriminator, cnn_discriminator
-
-DEFAULT_GROUND_TRUTH_PATH = "./data/train_data/ground_truth"
-DEFAULT_IMAGE_PATH = "./data/train_data/input"
 
 
 # define the combined generator and discriminator model,
@@ -80,9 +78,10 @@ def train(
     pgan_model,
     ground_truth_img_path,
     input_img_path,
-    batch_size=8,
-    training_img_size=(150, 150),
-    n_epochs=100,
+    training_img_size,
+    batch_size,
+    n_epochs,
+    log_dir,
 ):
     """
     Parameters
@@ -98,7 +97,7 @@ def train(
     images.
     The default is (150,150).
     n_epochs : Integer, number of epochs to train the network.
-     The default is 100.
+      The default is 100.
 
     Returns
     -------
@@ -173,35 +172,70 @@ def train(
                 % (i + 1, d_loss1, d_loss2, s_loss1, s_loss2, g_loss)
             )
 
-        summarize_performance(i, g_model, X_realA, X_realB)
+        summarize_performance(i, g_model, X_realA, X_realB, log_dir)
         save_model(g_model, s_model, i)
 
 
 if __name__ == "__main__":
-    image_shape = (150, 150, 1)
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--path-gt",
+        help="path to the training ground truth images",
+        type=str,
+        required=True,
+    )
+    parser.add_argument(
+        "--path-input",
+        help="path to the training input images",
+        type=str,
+        required=True,
+    )
+    parser.add_argument(
+        "--log-dir",
+        help="path to save the training results",
+        type=str,
+        default="./logs",
+    )
+    parser.add_argument(
+        "--img-width",
+        help="width of the training images",
+        type=int,
+        default=150,
+    )
+    parser.add_argument(
+        "--img-height",
+        help="height of the training images",
+        type=int,
+        default=150,
+    )
+    parser.add_argument("--bs", help="batch size", type=int, default=8)
+    parser.add_argument(
+        "--epoch",
+        help="provide the number of epochs to train the network",
+        type=int,
+        default=100,
+    )
+
+    args = parser.parse_args()
+
+    image_shape = (args.img_width, args.img_height, 1)
 
     d_model = cnn_discriminator(image_shape)
     g_model = generator(image_shape)
     t_model = twin_discriminator(image_shape)
     pgan_model = define_pgan(g_model, d_model, t_model, image_shape)
 
-    """
-    Provide path to the training data. The paths given below are examples.
-    They do not contain training data.
-    """
-    if len(sys.argv) < 3:
-        ground_truth_img_path = DEFAULT_GROUND_TRUTH_PATH
-        input_img_path = DEFAULT_IMAGE_PATH
-    else:
-        ground_truth_img_path = sys.argv[1]
-        input_img_path = sys.argv[2]
+    os.makedirs(args.log_dir)
 
-    # train model
     train(
         d_model,
         t_model,
         g_model,
         pgan_model,
-        ground_truth_img_path,
-        input_img_path,
+        args.path_gt,
+        args.path_input,
+        (args.img_width, args.img_height),
+        args.bs,
+        args.epoch,
+        args.log_dir,
     )
