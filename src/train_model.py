@@ -98,6 +98,7 @@ def train(
     The default is (150,150).
     n_epochs : Integer, number of epochs to train the network.
       The default is 100.
+    log_dir: path to save training results.
 
     Returns
     -------
@@ -173,7 +174,7 @@ def train(
             )
 
         summarize_performance(i, g_model, X_realA, X_realB, log_dir)
-        save_model(g_model, s_model, i)
+        save_model(g_model, i, log_dir)
 
 
 if __name__ == "__main__":
@@ -209,6 +210,7 @@ if __name__ == "__main__":
         default=150,
     )
     parser.add_argument("--bs", help="batch size", type=int, default=8)
+
     parser.add_argument(
         "--epoch",
         help="provide the number of epochs to train the network",
@@ -226,6 +228,8 @@ if __name__ == "__main__":
     pgan_model = define_pgan(g_model, d_model, t_model, image_shape)
 
     os.makedirs(args.log_dir)
+    os.makedirs(args.log_dir + "/epoch_images")
+    os.makedirs(args.log_dir + "/model")
 
     train(
         d_model,
