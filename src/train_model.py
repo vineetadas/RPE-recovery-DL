@@ -1,5 +1,4 @@
 import os
-
 import argparse
 from matplotlib import pyplot
 import numpy as np
@@ -7,7 +6,6 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-
 from models import generator, twin_discriminator, cnn_discriminator
 
 
@@ -227,10 +225,15 @@ if __name__ == "__main__":
     t_model = twin_discriminator(image_shape)
     pgan_model = define_pgan(g_model, d_model, t_model, image_shape)
 
-    os.makedirs(args.log_dir)
-    os.makedirs(args.log_dir + "/epoch_images")
-    os.makedirs(args.log_dir + "/model")
+    if not (os.path.exists(args.log_dir)):
+        os.makedirs(args.log_dir)
+        
+    if not (os.path.exists(args.log_dir+"/epoch_images")):
+        os.makedirs(args.log_dir+"/epoch_images")   
 
+    if not (os.path.exists(args.log_dir+"/model")):
+        os.makedirs(args.log_dir+"/model")  
+        
     train(
         d_model,
         t_model,
