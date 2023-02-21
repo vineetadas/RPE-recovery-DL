@@ -17,7 +17,7 @@ cellular structure in the living human eye with artificial intelligence".
 ```
 conda create -n <newenv> python=3.7.13
 conda activate <newenv>
-cd rpe-recovery-dl
+cd RPE-recovery-DL
 pip install -r requirements.txt 
 cd src
 ```
